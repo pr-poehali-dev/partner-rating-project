@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -117,14 +117,38 @@ const affiliatePrograms: AffiliateProgram[] = [
   }
 ];
 
-const monthlyData = [
-  { month: 'Янв', revenue: 4200, clicks: 12400, conversions: 380 },
-  { month: 'Фев', revenue: 5100, clicks: 14200, conversions: 450 },
-  { month: 'Мар', revenue: 6800, clicks: 16800, conversions: 520 },
-  { month: 'Апр', revenue: 7200, clicks: 18200, conversions: 580 },
-  { month: 'Май', revenue: 8500, clicks: 21400, conversions: 680 },
-  { month: 'Июн', revenue: 9800, clicks: 24600, conversions: 780 }
-];
+const allMonthlyData = {
+  '1month': [
+    { month: 'Июн', revenue: 9800, clicks: 24600, conversions: 780 }
+  ],
+  '3months': [
+    { month: 'Апр', revenue: 7200, clicks: 18200, conversions: 580 },
+    { month: 'Май', revenue: 8500, clicks: 21400, conversions: 680 },
+    { month: 'Июн', revenue: 9800, clicks: 24600, conversions: 780 }
+  ],
+  '6months': [
+    { month: 'Янв', revenue: 4200, clicks: 12400, conversions: 380 },
+    { month: 'Фев', revenue: 5100, clicks: 14200, conversions: 450 },
+    { month: 'Мар', revenue: 6800, clicks: 16800, conversions: 520 },
+    { month: 'Апр', revenue: 7200, clicks: 18200, conversions: 580 },
+    { month: 'Май', revenue: 8500, clicks: 21400, conversions: 680 },
+    { month: 'Июн', revenue: 9800, clicks: 24600, conversions: 780 }
+  ],
+  '1year': [
+    { month: 'Июл', revenue: 3200, clicks: 9800, conversions: 280 },
+    { month: 'Авг', revenue: 3500, clicks: 10200, conversions: 310 },
+    { month: 'Сен', revenue: 3800, clicks: 11000, conversions: 340 },
+    { month: 'Окт', revenue: 4000, clicks: 11800, conversions: 360 },
+    { month: 'Ноя', revenue: 3900, clicks: 11500, conversions: 350 },
+    { month: 'Дек', revenue: 4100, clicks: 12000, conversions: 370 },
+    { month: 'Янв', revenue: 4200, clicks: 12400, conversions: 380 },
+    { month: 'Фев', revenue: 5100, clicks: 14200, conversions: 450 },
+    { month: 'Мар', revenue: 6800, clicks: 16800, conversions: 520 },
+    { month: 'Апр', revenue: 7200, clicks: 18200, conversions: 580 },
+    { month: 'Май', revenue: 8500, clicks: 21400, conversions: 680 },
+    { month: 'Июн', revenue: 9800, clicks: 24600, conversions: 780 }
+  ]
+};
 
 const categoryData = [
   { name: 'E-commerce', value: 45, color: '#FF6B35' },
@@ -144,11 +168,17 @@ const topPerformers = [
 
 const categories = ['Все категории', 'E-commerce', 'Финансы', 'Путешествия', 'Образование', 'Технологии'];
 
+type TimePeriod = '1month' | '3months' | '6months' | '1year';
+
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Все категории');
   const [favorites, setFavorites] = useState<number[]>([]);
   const [compareList, setCompareList] = useState<number[]>([]);
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('6months');
+  const [metricView, setMetricView] = useState<'revenue' | 'clicks' | 'conversions'>('revenue');
+
+  const monthlyData = allMonthlyData[timePeriod];
 
   const filteredPrograms = affiliatePrograms.filter(program => {
     const matchesSearch = program.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -169,10 +199,43 @@ export default function Index() {
     );
   };
 
-  const totalRevenue = monthlyData.reduce((sum, item) => sum + item.revenue, 0);
-  const totalClicks = monthlyData.reduce((sum, item) => sum + item.clicks, 0);
-  const totalConversions = monthlyData.reduce((sum, item) => sum + item.conversions, 0);
-  const avgConversion = ((totalConversions / totalClicks) * 100).toFixed(2);
+  const stats = useMemo(() => {
+    const totalRevenue = monthlyData.reduce((sum, item) => sum + item.revenue, 0);
+    const totalClicks = monthlyData.reduce((sum, item) => sum + item.clicks, 0);
+    const totalConversions = monthlyData.reduce((sum, item) => sum + item.conversions, 0);
+    const avgConversion = ((totalConversions / totalClicks) * 100).toFixed(2);
+
+    const prevPeriodData = timePeriod === '1month' ? allMonthlyData['3months'].slice(0, 1) :
+                           timePeriod === '3months' ? allMonthlyData['6months'].slice(0, 3) :
+                           timePeriod === '6months' ? allMonthlyData['1year'].slice(0, 6) :
+                           allMonthlyData['1year'].slice(0, 12);
+
+    const prevRevenue = prevPeriodData.reduce((sum, item) => sum + item.revenue, 0);
+    const prevClicks = prevPeriodData.reduce((sum, item) => sum + item.clicks, 0);
+    const prevConversions = prevPeriodData.reduce((sum, item) => sum + item.conversions, 0);
+
+    const revenueGrowth = prevRevenue > 0 ? (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1) : '0';
+    const clicksGrowth = prevClicks > 0 ? (((totalClicks - prevClicks) / prevClicks) * 100).toFixed(1) : '0';
+    const conversionsGrowth = prevConversions > 0 ? (((totalConversions - prevConversions) / prevConversions) * 100).toFixed(1) : '0';
+
+    return {
+      totalRevenue,
+      totalClicks,
+      totalConversions,
+      avgConversion,
+      revenueGrowth: parseFloat(revenueGrowth),
+      clicksGrowth: parseFloat(clicksGrowth),
+      conversionsGrowth: parseFloat(conversionsGrowth)
+    };
+  }, [monthlyData, timePeriod]);
+
+  const chartMetricConfig = {
+    revenue: { label: 'Доход', color: '#FF6B35', dataKey: 'revenue' },
+    clicks: { label: 'Клики', color: '#4ECDC4', dataKey: 'clicks' },
+    conversions: { label: 'Конверсии', color: '#1A1A2E', dataKey: 'conversions' }
+  };
+
+  const currentMetric = chartMetricConfig[metricView];
 
   return (
     <div className="min-h-screen bg-background">
@@ -189,13 +252,27 @@ export default function Index() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+                <Icon name="Calendar" size={16} className="text-muted-foreground" />
+                <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
+                  <SelectTrigger className="w-[140px] h-8 border-0 bg-transparent">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1month">1 месяц</SelectItem>
+                    <SelectItem value="3months">3 месяца</SelectItem>
+                    <SelectItem value="6months">6 месяцев</SelectItem>
+                    <SelectItem value="1year">1 год</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button variant="outline" size="sm">
                 <Icon name="Download" size={16} className="mr-2" />
                 Экспорт
               </Button>
               <Button size="sm" className="bg-primary">
                 <Icon name="Plus" size={16} className="mr-2" />
-                Добавить программу
+                Добавить
               </Button>
             </div>
           </div>
@@ -209,10 +286,10 @@ export default function Index() {
               <p className="text-sm font-medium text-muted-foreground">Общий доход</p>
               <Icon name="DollarSign" size={18} className="text-primary" />
             </div>
-            <p className="text-3xl font-bold mb-1">${totalRevenue.toLocaleString()}</p>
-            <div className="flex items-center gap-1 text-xs text-green-600">
-              <Icon name="TrendingUp" size={12} />
-              <span>+18.2% за месяц</span>
+            <p className="text-3xl font-bold mb-1">${stats.totalRevenue.toLocaleString()}</p>
+            <div className={`flex items-center gap-1 text-xs ${stats.revenueGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <Icon name={stats.revenueGrowth >= 0 ? 'TrendingUp' : 'TrendingDown'} size={12} />
+              <span>{stats.revenueGrowth >= 0 ? '+' : ''}{stats.revenueGrowth}% за период</span>
             </div>
           </Card>
 
@@ -221,10 +298,10 @@ export default function Index() {
               <p className="text-sm font-medium text-muted-foreground">Кликов</p>
               <Icon name="MousePointerClick" size={18} className="text-secondary" />
             </div>
-            <p className="text-3xl font-bold mb-1">{totalClicks.toLocaleString()}</p>
-            <div className="flex items-center gap-1 text-xs text-green-600">
-              <Icon name="TrendingUp" size={12} />
-              <span>+12.5% за месяц</span>
+            <p className="text-3xl font-bold mb-1">{stats.totalClicks.toLocaleString()}</p>
+            <div className={`flex items-center gap-1 text-xs ${stats.clicksGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <Icon name={stats.clicksGrowth >= 0 ? 'TrendingUp' : 'TrendingDown'} size={12} />
+              <span>{stats.clicksGrowth >= 0 ? '+' : ''}{stats.clicksGrowth}% за период</span>
             </div>
           </Card>
 
@@ -233,10 +310,10 @@ export default function Index() {
               <p className="text-sm font-medium text-muted-foreground">Конверсий</p>
               <Icon name="Target" size={18} className="text-primary" />
             </div>
-            <p className="text-3xl font-bold mb-1">{totalConversions.toLocaleString()}</p>
-            <div className="flex items-center gap-1 text-xs text-green-600">
-              <Icon name="TrendingUp" size={12} />
-              <span>+8.3% за месяц</span>
+            <p className="text-3xl font-bold mb-1">{stats.totalConversions.toLocaleString()}</p>
+            <div className={`flex items-center gap-1 text-xs ${stats.conversionsGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <Icon name={stats.conversionsGrowth >= 0 ? 'TrendingUp' : 'TrendingDown'} size={12} />
+              <span>{stats.conversionsGrowth >= 0 ? '+' : ''}{stats.conversionsGrowth}% за период</span>
             </div>
           </Card>
 
@@ -245,10 +322,10 @@ export default function Index() {
               <p className="text-sm font-medium text-muted-foreground">Конверсия</p>
               <Icon name="Percent" size={18} className="text-secondary" />
             </div>
-            <p className="text-3xl font-bold mb-1">{avgConversion}%</p>
+            <p className="text-3xl font-bold mb-1">{stats.avgConversion}%</p>
             <div className="flex items-center gap-1 text-xs text-green-600">
               <Icon name="TrendingUp" size={12} />
-              <span>+2.1% за месяц</span>
+              <span>Отличный показатель</span>
             </div>
           </Card>
         </div>
@@ -256,32 +333,39 @@ export default function Index() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <Card className="lg:col-span-2 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold">Динамика дохода</h2>
-              <Select defaultValue="6months">
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1month">1 месяц</SelectItem>
-                  <SelectItem value="3months">3 месяца</SelectItem>
-                  <SelectItem value="6months">6 месяцев</SelectItem>
-                  <SelectItem value="1year">1 год</SelectItem>
-                </SelectContent>
-              </Select>
+              <h2 className="text-lg font-bold">Динамика показателей</h2>
+              <Tabs value={metricView} onValueChange={(value) => setMetricView(value as typeof metricView)} className="w-auto">
+                <TabsList className="grid grid-cols-3 w-[300px]">
+                  <TabsTrigger value="revenue" className="text-xs">Доход</TabsTrigger>
+                  <TabsTrigger value="clicks" className="text-xs">Клики</TabsTrigger>
+                  <TabsTrigger value="conversions" className="text-xs">Конверсии</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={monthlyData}>
                 <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#FF6B35" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#FF6B35" stopOpacity={0}/>
+                  <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={currentMetric.color} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={currentMetric.color} stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="month" stroke="#888" fontSize={12} />
                 <YAxis stroke="#888" fontSize={12} />
-                <Tooltip />
-                <Area type="monotone" dataKey="revenue" stroke="#FF6B35" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #e0e0e0' }}
+                  labelStyle={{ fontWeight: 600 }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey={currentMetric.dataKey} 
+                  stroke={currentMetric.color} 
+                  strokeWidth={3} 
+                  fillOpacity={1} 
+                  fill="url(#colorMetric)"
+                  name={currentMetric.label}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </Card>
@@ -352,7 +436,7 @@ export default function Index() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="name" stroke="#888" fontSize={11} />
                 <YAxis stroke="#888" fontSize={12} />
-                <Tooltip />
+                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e0e0e0' }} />
                 <Legend />
                 <Bar dataKey="commissionNum" fill="#FF6B35" name="Комиссия %" radius={[8, 8, 0, 0]} />
                 <Bar dataKey="avgPayout" fill="#4ECDC4" name="Ср. выплата $" radius={[8, 8, 0, 0]} />
