@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface AffiliateProgram {
@@ -175,6 +176,7 @@ export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState('Все категории');
   const [favorites, setFavorites] = useState<number[]>([]);
   const [compareList, setCompareList] = useState<number[]>([]);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('6months');
   const [metricView, setMetricView] = useState<'revenue' | 'clicks' | 'conversions'>('revenue');
 
@@ -472,7 +474,10 @@ export default function Index() {
                 </SelectContent>
               </Select>
               {compareList.length > 0 && (
-                <Button variant="outline">
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsCompareModalOpen(true)}
+                >
                   <Icon name="GitCompare" className="mr-2" size={18} />
                   Сравнить ({compareList.length})
                 </Button>
@@ -573,6 +578,249 @@ export default function Index() {
           )}
         </Card>
       </main>
+
+      <Dialog open={isCompareModalOpen} onOpenChange={setIsCompareModalOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <Icon name="GitCompare" size={24} className="text-primary" />
+              Сравнение партнёрских программ
+            </DialogTitle>
+            <DialogDescription>
+              Детальное сравнение {compareList.length} выбранных программ
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-6">
+            {compareList.length === 0 ? (
+              <div className="text-center py-12">
+                <Icon name="GitCompare" size={64} className="mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-bold mb-2">Программы не выбраны</h3>
+                <p className="text-muted-foreground">Выберите программы для сравнения, нажав на иконку сравнения</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-6 mb-6">
+                  <Card className="overflow-hidden">
+                    <div className="bg-muted px-6 py-4 border-b">
+                      <h3 className="font-bold text-lg">Основная информация</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b bg-muted/30">
+                            <th className="text-left py-3 px-6 font-semibold text-sm">Характеристика</th>
+                            {compareList.map(id => {
+                              const program = affiliatePrograms.find(p => p.id === id);
+                              return program ? (
+                                <th key={id} className="text-center py-3 px-4 font-semibold text-sm min-w-[150px]">
+                                  <div className="flex flex-col items-center gap-2">
+                                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-secondary/20 to-primary/20 flex items-center justify-center">
+                                      <span className="text-xl font-bold">{program.logo}</span>
+                                    </div>
+                                    <span>{program.name}</span>
+                                  </div>
+                                </th>
+                              ) : null;
+                            })}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b hover:bg-muted/10">
+                            <td className="py-4 px-6 font-medium text-muted-foreground">Категория</td>
+                            {compareList.map(id => {
+                              const program = affiliatePrograms.find(p => p.id === id);
+                              return program ? (
+                                <td key={id} className="py-4 px-4 text-center">
+                                  <Badge variant="secondary">{program.category}</Badge>
+                                </td>
+                              ) : null;
+                            })}
+                          </tr>
+                          <tr className="border-b hover:bg-muted/10">
+                            <td className="py-4 px-6 font-medium text-muted-foreground">Рейтинг</td>
+                            {compareList.map(id => {
+                              const program = affiliatePrograms.find(p => p.id === id);
+                              return program ? (
+                                <td key={id} className="py-4 px-4 text-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <Icon name="Star" size={18} className="fill-primary text-primary" />
+                                    <span className="text-lg font-bold">{program.rating}</span>
+                                  </div>
+                                </td>
+                              ) : null;
+                            })}
+                          </tr>
+                          <tr className="border-b hover:bg-muted/10">
+                            <td className="py-4 px-6 font-medium text-muted-foreground">Отзывов</td>
+                            {compareList.map(id => {
+                              const program = affiliatePrograms.find(p => p.id === id);
+                              return program ? (
+                                <td key={id} className="py-4 px-4 text-center font-semibold">
+                                  {program.reviews.toLocaleString()}
+                                </td>
+                              ) : null;
+                            })}
+                          </tr>
+                          <tr className="border-b hover:bg-muted/10 bg-primary/5">
+                            <td className="py-4 px-6 font-medium text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <Icon name="Percent" size={16} className="text-primary" />
+                                Комиссия
+                              </div>
+                            </td>
+                            {compareList.map(id => {
+                              const program = affiliatePrograms.find(p => p.id === id);
+                              return program ? (
+                                <td key={id} className="py-4 px-4 text-center">
+                                  <span className="text-lg font-bold text-primary">{program.commission}</span>
+                                </td>
+                              ) : null;
+                            })}
+                          </tr>
+                          <tr className="border-b hover:bg-muted/10">
+                            <td className="py-4 px-6 font-medium text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <Icon name="Target" size={16} className="text-secondary" />
+                                Конверсия
+                              </div>
+                            </td>
+                            {compareList.map(id => {
+                              const program = affiliatePrograms.find(p => p.id === id);
+                              return program ? (
+                                <td key={id} className="py-4 px-4 text-center">
+                                  <span className="text-lg font-bold text-secondary">{program.conversion}%</span>
+                                </td>
+                              ) : null;
+                            })}
+                          </tr>
+                          <tr className="border-b hover:bg-muted/10 bg-secondary/5">
+                            <td className="py-4 px-6 font-medium text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <Icon name="DollarSign" size={16} className="text-secondary" />
+                                Средняя выплата
+                              </div>
+                            </td>
+                            {compareList.map(id => {
+                              const program = affiliatePrograms.find(p => p.id === id);
+                              return program ? (
+                                <td key={id} className="py-4 px-4 text-center">
+                                  <span className="text-lg font-bold">${program.avgPayout}</span>
+                                </td>
+                              ) : null;
+                            })}
+                          </tr>
+                          <tr className="border-b hover:bg-muted/10">
+                            <td className="py-4 px-6 font-medium text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <Icon name="TrendingUp" size={16} className="text-green-600" />
+                                Рост
+                              </div>
+                            </td>
+                            {compareList.map(id => {
+                              const program = affiliatePrograms.find(p => p.id === id);
+                              return program ? (
+                                <td key={id} className="py-4 px-4 text-center">
+                                  <span className="text-lg font-bold text-green-600">+{program.growth}%</span>
+                                </td>
+                              ) : null;
+                            })}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <h3 className="font-bold text-lg mb-4">Визуальное сравнение</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={compareList.map(id => affiliatePrograms.find(p => p.id === id)).filter(Boolean)}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="name" stroke="#888" fontSize={12} />
+                        <YAxis stroke="#888" fontSize={12} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e0e0e0' }} />
+                        <Legend />
+                        <Bar dataKey="commissionNum" fill="#FF6B35" name="Комиссия %" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="conversion" fill="#4ECDC4" name="Конверсия %" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPayout" fill="#1A1A2E" name="Ср. выплата $" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Card>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {compareList.map(id => {
+                      const program = affiliatePrograms.find(p => p.id === id);
+                      if (!program) return null;
+                      
+                      const maxCommission = Math.max(...compareList.map(id => affiliatePrograms.find(p => p.id === id)?.commissionNum || 0));
+                      const maxConversion = Math.max(...compareList.map(id => affiliatePrograms.find(p => p.id === id)?.conversion || 0));
+                      const maxPayout = Math.max(...compareList.map(id => affiliatePrograms.find(p => p.id === id)?.avgPayout || 0));
+                      
+                      const isBestCommission = program.commissionNum === maxCommission;
+                      const isBestConversion = program.conversion === maxConversion;
+                      const isBestPayout = program.avgPayout === maxPayout;
+                      
+                      return (
+                        <Card key={id} className="p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-secondary/20 to-primary/20 flex items-center justify-center">
+                              <span className="text-2xl font-bold">{program.logo}</span>
+                            </div>
+                            <div>
+                              <h4 className="font-bold">{program.name}</h4>
+                              <p className="text-xs text-muted-foreground">{program.category}</p>
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4">{program.description}</p>
+                          <div className="space-y-2">
+                            {isBestCommission && (
+                              <Badge className="bg-primary/10 text-primary border-primary/20">
+                                <Icon name="Award" size={12} className="mr-1" />
+                                Лучшая комиссия
+                              </Badge>
+                            )}
+                            {isBestConversion && (
+                              <Badge className="bg-secondary/10 text-secondary border-secondary/20">
+                                <Icon name="Target" size={12} className="mr-1" />
+                                Лучшая конверсия
+                              </Badge>
+                            )}
+                            {isBestPayout && (
+                              <Badge className="bg-green-50 text-green-700 border-green-200">
+                                <Icon name="DollarSign" size={12} className="mr-1" />
+                                Лучшая выплата
+                              </Badge>
+                            )}
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-4 border-t">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setCompareList([])}
+                  >
+                    <Icon name="X" size={16} className="mr-2" />
+                    Очистить выбор
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline">
+                      <Icon name="Download" size={16} className="mr-2" />
+                      Экспорт PDF
+                    </Button>
+                    <Button onClick={() => setIsCompareModalOpen(false)}>
+                      Закрыть
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
